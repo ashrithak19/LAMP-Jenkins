@@ -1,0 +1,22 @@
+---
+- name: Install apache
+  hosts: host2
+  become: true
+  become_user: root
+  gather_facts: true
+  tasks:
+    - name: Install apache2
+      package: name=httpd state=present
+    - name: Start httpd service
+      service: name=httpd state=running enabled=yes
+    - name: Install epel repo
+      yum: name=epel-release state=installed
+    - name: Download remi-repo
+      get_url:
+          url: http://rpms.famillecollet.com/enterprise/remi-release-7.rpm
+          dest: /tmp
+   # - name: Install Remi-repo
+   #   command: /usr/bin/rpm -ivh /tmp/remi-release-7.rpm
+   #   creates: /etc/yum.repos.d/remi.repo
+    - name: Install php
+      yum: name=php70 state=present 

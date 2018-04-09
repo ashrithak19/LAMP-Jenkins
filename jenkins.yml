@@ -1,0 +1,42 @@
+--- 
+- name: Install Jenkins on host1
+  hosts: host1 
+  gather_facts: true
+  become: yes
+  become_user: root
+  vars:
+  download_url1: http://download.oracle.com/otn-pub/java/jdk/8u5-b13/jdk-8u5-linux-x64.tar.gz
+  download_folder1: /opt
+  java_name1: "{{download_folder1}}/jdk1.8.0_05"
+  java_archive1: "{{download_folder1}}/jdk-8u5-linux-x64.tar.gz"
+
+  tasks:
+    - name: Install the repository 
+      yum_repository:
+      name: epel
+      baseurl: https://download.fedoraproject.org/pub/epel/$releasever/$basearch/
+    - name: Download Java
+      command: "wget -q -O {{java_archive1}} --no-check-certificate --no-cookies --header 'Cookie: oraclelicense=accept-securebackup-cookie' {{download_url1}} creates={{java_archive1}}"
+    - name: Unpack archive
+      command: "tar -zxf {{java_archive1}} -C {{download_folder1}} creates={{java_name1}}"
+    - name: Fix ownership
+      file: state=directory path={{java_name1}} owner=root group=root recurse=yes
+    - name: Make Java available for system
+      command: 'alternatives --install "/usr/bin/java" "java" "{{java_name1}}/bin/java" 2000'
+    - name: Clean up
+      file: state=absent path={{java_archive1}}
+    - name: Download jenkins repo
+      command: wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+      command: rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+    - name: install jenkins
+      yum_repository:
+      name: jenkins
+      state: present
+    - name: Enable port 8080
+      shell: iptables -I INPUT -p tcp --dport 8080 -m state --state NEW,ESTABLISHED -j ACCEPT
+    - name: Start the service
+      service: 
+      name: jenkins
+      state: started 
+ 
+
